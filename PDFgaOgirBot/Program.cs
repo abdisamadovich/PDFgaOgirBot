@@ -1,9 +1,16 @@
-﻿using PdfSharp.Drawing;
-using PdfSharp.Pdf;
+﻿using System;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
+using System.Drawing; // System.Drawing.Common uchun
+using System.Drawing.Imaging;
 
 class Program
 {
@@ -82,7 +89,7 @@ class Program
                     );
 
                     // Vaqtinchalik PDF faylni o‘chirish
-                    System.IO.File.Delete(pdfFilePath); // Aniq namespace ko‘rsatildi
+                    System.IO.File.Delete(pdfFilePath);
                 }
                 catch (Exception ex)
                 {
@@ -112,17 +119,21 @@ class Program
 
     private static async Task<string> ConvertImageToPdf(Stream imageStream)
     {
+        // Rasmni qayta formatlash (PNG ga aylantirish)
+        using var memoryStream = new MemoryStream();
+        using (var image = Image.FromStream(imageStream))
+        {
+            // Rasmni PNG formatida saqlash
+            image.Save(memoryStream, ImageFormat.Png);
+        }
+        memoryStream.Position = 0;
+
         // PDF hujjatini yaratish
         using var document = new PdfDocument();
         var page = document.AddPage();
 
         // Rasmni XImage sifatida yuklash
         using var xGraphics = XGraphics.FromPdfPage(page);
-        using var memoryStream = new MemoryStream();
-        await imageStream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        // XImage.FromStream ga to‘g‘ri Stream uzatish
         using var xImage = XImage.FromStream(memoryStream);
 
         // Rasm o‘lchamlarini moslashtirish
